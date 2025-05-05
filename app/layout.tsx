@@ -7,9 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Defne'nin Doğum Günü",
-  description: "Defne için özel hazırlanmış doğum günü sürprizi",
-    generator: 'v0.dev'
+  title: "sa",
 }
 
 export default function RootLayout({
