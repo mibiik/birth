@@ -98,7 +98,7 @@ export default function CountdownPage() {
   if (!isClient) {
     return (
       <div className="w-full max-w-md mx-auto text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-pink-600 mb-6">Defne&apos;nin Doğum Günü</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-pink-600 mb-6"></h1>
         <div className="flex justify-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
         </div>
@@ -110,7 +110,7 @@ export default function CountdownPage() {
     <div
       className={`w-full max-w-md mx-auto text-center transition-opacity duration-500 ${isContentVisible ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}
     >
-      <h1 className="text-3xl md:text-4xl font-bold text-pink-600 mb-6">Defne&apos;nin Doğum Günü</h1>
+      <h1 className="text-3xl md:text-4xl font-bold text-pink-600 mb-6"></h1>
 
       <Card className="bg-white/80 backdrop-blur-sm border-pink-200 shadow-lg">
         <CardContent className="p-6" onClick={handleCountdownClick}>

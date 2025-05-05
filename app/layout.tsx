@@ -20,11 +20,7 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          storageKey="birthday-theme"
-        >
+        <ThemeProvider attribute="class" defaultTheme="light">
           {children}
         </ThemeProvider>
       </body>

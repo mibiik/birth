@@ -21,6 +21,8 @@ const cakeColors = [
   "#CC99FF", // Açık mor
   "#FFFFFF", // Beyaz
   "#FFD700", // Altın
+  "#E6B3FF", // Lila
+  "#FFB366" // Turuncu
 ]
 
 // Süslemeler

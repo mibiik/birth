@@ -8,7 +8,7 @@ export default function QuizPage() {
         <Link href="/" className="inline-block mb-6 text-pink-600 hover:text-pink-800 transition-colors">
           ← Ana Sayfaya Dön
         </Link>
-        <h1 className="text-3xl md:text-4xl font-bold text-center text-pink-600 mb-8">Defne Quiz</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-center text-pink-600 mb-8">Quiz</h1>
         <QuizGame />
       </div>
     </main>
