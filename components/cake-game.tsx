@@ -123,6 +123,8 @@ export default function CakeGame() {
   const [decorationSize, setDecorationSize] = useState(20)
   const [showCompletionMessage, setShowCompletionMessage] = useState(false)
   const [selectedDecorationIndex, setSelectedDecorationIndex] = useState<number | null>(null)
+  const [showIntro, setShowIntro] = useState(true)
+  const [introAnimationComplete, setIntroAnimationComplete] = useState(false)
 
   // Canvas boyutları
   const canvasWidth = 300
@@ -350,10 +352,47 @@ export default function CakeGame() {
   useEffect(() => {
     drawCake()
   }, [cakeState])
+  
+  // Giriş animasyonu
+  useEffect(() => {
+    if (showIntro) {
+      // Giriş konfeti efekti
+      confetti({
+        particleCount: 150,
+        spread: 180,
+        origin: { y: 0 },
+        colors: ['#FF9999', '#FF66B2', '#CC99FF', '#FFD700', '#FFCC99'],
+        startVelocity: 30,
+        gravity: 0.5,
+        ticks: 300,
+        shapes: ['circle', 'square']
+      })
+      
+      // 2.5 saniye sonra intro'yu kapat
+      const timer = setTimeout(() => {
+        setShowIntro(false)
+        setIntroAnimationComplete(true)
+      }, 2500)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [showIntro])
 
   return (
     <div className="flex flex-col items-center">
-      <Card className="bg-white/80 backdrop-blur-sm border-pink-200 shadow-lg w-full max-w-md">
+      {showIntro && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-gradient-to-r from-pink-100 to-purple-100 animate-fadeIn">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-pink-500 mb-4 animate-bounce">Pasta Yapma Zamanı!</h1>
+            <p className="text-xl text-purple-600 animate-pulse">Harika bir pasta tasarlamaya hazır mısın?</p>
+          </div>
+        </div>
+      )}
+      <Card 
+        className={`bg-white/80 backdrop-blur-sm border-pink-200 shadow-lg w-full max-w-md ${introAnimationComplete ? 'animate-slideDown' : 'opacity-0'}`}
+        style={{
+          animation: introAnimationComplete ? 'slideDown 0.5s ease-out forwards' : 'none'
+        }}>
         <CardContent className="p-6">
           <div className="flex justify-center mb-4">
             <canvas
@@ -592,6 +631,38 @@ export default function CakeGame() {
               </div>
             </TabsContent>
           </Tabs>
+
+          <style jsx global>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes slideDown {
+              from { opacity: 0; transform: translateY(-50px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fadeIn {
+              animation: fadeIn 1s ease-in-out;
+            }
+            .animate-slideDown {
+              animation: slideDown 0.5s ease-out forwards;
+            }
+            .animate-bounce {
+              animation: bounce 1s infinite;
+            }
+            @keyframes bounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-10px); }
+            }
+            .animate-pulse {
+              animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+              0% { opacity: 0.6; }
+              50% { opacity: 1; }
+              100% { opacity: 0.6; }
+            }
+          `}</style>
 
           <div className="flex gap-2 mt-6">
             <Button variant="outline" className="flex-1" onClick={resetCake}>
