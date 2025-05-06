@@ -22,7 +22,15 @@ const cakeColors = [
   "#FFFFFF", // Beyaz
   "#FFD700", // Altın
   "#E6B3FF", // Lila
-  "#FFB366" // Turuncu
+  "#FFB366", // Turuncu
+  "#8B0000", // Koyu kırmızı
+  "#006400", // Koyu yeşil
+  "#00008B", // Koyu mavi
+  "#4B0082", // Indigo
+  "#800080", // Mor
+  "#8B4513", // Kahverengi
+  "#2F4F4F", // Koyu gri
+  "#000000"  // Siyah
 ]
 
 // Süslemeler
@@ -106,10 +114,15 @@ export default function CakeGame() {
     layers: 3,
     decorations: [] as { type: number; x: number; y: number; size: number; color: string }[],
     text: "Doğum Günün Kutlu Olsun Defne!",
+    textColor: "#FF66B2",
+    textSize: 16,
+    cakeShape: "round", // round, square, heart
+    backgroundColor: "#FFFFFF"
   })
   const [isDrawing, setIsDrawing] = useState(false)
   const [decorationSize, setDecorationSize] = useState(20)
   const [showCompletionMessage, setShowCompletionMessage] = useState(false)
+  const [selectedDecorationIndex, setSelectedDecorationIndex] = useState<number | null>(null)
 
   // Canvas boyutları
   const canvasWidth = 300
@@ -125,6 +138,10 @@ export default function CakeGame() {
 
     // Canvas'ı temizle
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // Arka plan rengini çiz
+    ctx.fillStyle = cakeState.backgroundColor
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // Pasta katmanlarını çiz
     const layerHeight = 40
@@ -136,27 +153,64 @@ export default function CakeGame() {
       const width = maxWidth - (maxWidth - minWidth) * (i / (cakeState.layers - 1))
 
       ctx.fillStyle = cakeState.baseColor
-      ctx.beginPath()
-      ctx.ellipse(canvas.width / 2, y, width / 2, layerHeight / 3, 0, 0, Math.PI * 2)
-      ctx.fill()
+      
+      if (cakeState.cakeShape === "round") {
+        // Yuvarlak pasta
+        ctx.beginPath()
+        ctx.ellipse(canvas.width / 2, y, width / 2, layerHeight / 3, 0, 0, Math.PI * 2)
+        ctx.fill()
 
-      ctx.fillRect(canvas.width / 2 - width / 2, y - layerHeight, width, layerHeight)
+        ctx.fillRect(canvas.width / 2 - width / 2, y - layerHeight, width, layerHeight)
 
-      ctx.fillStyle = cakeState.baseColor
-      ctx.beginPath()
-      ctx.ellipse(canvas.width / 2, y - layerHeight, width / 2, layerHeight / 3, 0, 0, Math.PI * 2)
-      ctx.fill()
+        ctx.beginPath()
+        ctx.ellipse(canvas.width / 2, y - layerHeight, width / 2, layerHeight / 3, 0, 0, Math.PI * 2)
+        ctx.fill()
+      } else if (cakeState.cakeShape === "square") {
+        // Kare pasta
+        ctx.fillRect(canvas.width / 2 - width / 2, y - layerHeight, width, layerHeight)
+        ctx.fillRect(canvas.width / 2 - width / 2, y - layerHeight - layerHeight / 3, width, layerHeight / 3)
+        ctx.fillRect(canvas.width / 2 - width / 2, y, width, layerHeight / 3)
+      } else if (cakeState.cakeShape === "heart") {
+        // Kalp şeklinde pasta
+        const centerX = canvas.width / 2
+        const heartWidth = width
+        const heartHeight = layerHeight * 1.2
+        
+        ctx.fillStyle = cakeState.baseColor
+        ctx.beginPath()
+        ctx.moveTo(centerX, y - layerHeight / 2)
+        ctx.bezierCurveTo(
+          centerX - heartWidth / 2, y - layerHeight - heartHeight / 2,
+          centerX - heartWidth, y - heartHeight / 4,
+          centerX, y
+        )
+        ctx.bezierCurveTo(
+          centerX + heartWidth, y - heartHeight / 4,
+          centerX + heartWidth / 2, y - layerHeight - heartHeight / 2,
+          centerX, y - layerHeight / 2
+        )
+        ctx.fill()
+      }
     }
 
     // Süslemeleri çiz
-    cakeState.decorations.forEach((dec) => {
+    cakeState.decorations.forEach((dec, index) => {
       decorations[dec.type].draw(ctx, dec.x, dec.y, dec.size, dec.color)
+      
+      // Seçili süslemeyi vurgula
+      if (selectedDecorationIndex === index) {
+        ctx.strokeStyle = "#FF0000"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(dec.x, dec.y, dec.size + 5, 0, Math.PI * 2)
+        ctx.stroke()
+      }
     })
 
     // Metni çiz
     if (cakeState.text) {
-      ctx.fillStyle = "#FF66B2"
-      ctx.font = "16px Arial"
+      ctx.fillStyle = cakeState.textColor
+      ctx.font = `${cakeState.textSize}px Arial`
       ctx.textAlign = "center"
       ctx.fillText(cakeState.text, canvas.width / 2, canvas.height - 50)
     }
@@ -173,22 +227,49 @@ export default function CakeGame() {
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
-    // Yeni süsleme ekle
-    const newDecorations = [
-      ...cakeState.decorations,
-      {
-        type: selectedDecoration,
-        x,
-        y,
-        size: decorationSize,
-        color: selectedColor,
-      },
-    ]
-
-    setCakeState({
-      ...cakeState,
-      decorations: newDecorations,
+    // Önce tıklanan bir süsleme var mı kontrol et
+    const clickedDecorationIndex = cakeState.decorations.findIndex(dec => {
+      const distance = Math.sqrt(Math.pow(dec.x - x, 2) + Math.pow(dec.y - y, 2))
+      return distance <= dec.size
     })
+
+    if (clickedDecorationIndex !== -1) {
+      // Süsleme seçildi
+      setSelectedDecorationIndex(clickedDecorationIndex)
+      return
+    }
+    
+    // Seçili süsleme yoksa yeni süsleme ekle
+    if (selectedDecorationIndex === null) {
+      const newDecorations = [
+        ...cakeState.decorations,
+        {
+          type: selectedDecoration,
+          x,
+          y,
+          size: decorationSize,
+          color: selectedColor,
+        },
+      ]
+
+      setCakeState({
+        ...cakeState,
+        decorations: newDecorations,
+      })
+    } else {
+      // Seçili süslemeyi taşı
+      const newDecorations = [...cakeState.decorations]
+      newDecorations[selectedDecorationIndex] = {
+        ...newDecorations[selectedDecorationIndex],
+        x,
+        y
+      }
+      
+      setCakeState({
+        ...cakeState,
+        decorations: newDecorations,
+      })
+    }
   }
 
   // Pastayı tamamla
@@ -208,6 +289,48 @@ export default function CakeGame() {
     }, 3000)
   }
 
+  // Seçili süslemeyi sil
+  const deleteSelectedDecoration = () => {
+    if (selectedDecorationIndex !== null) {
+      const newDecorations = [...cakeState.decorations]
+      newDecorations.splice(selectedDecorationIndex, 1)
+      
+      setCakeState({
+        ...cakeState,
+        decorations: newDecorations,
+      })
+      
+      setSelectedDecorationIndex(null)
+    }
+  }
+  
+  // Rastgele süslemeler ekle
+  const addRandomDecorations = () => {
+    const newDecorations = [...cakeState.decorations]
+    const count = Math.floor(Math.random() * 5) + 5 // 5-10 arası rastgele süsleme
+    
+    for (let i = 0; i < count; i++) {
+      const type = Math.floor(Math.random() * decorations.length)
+      const x = Math.random() * (canvasWidth - 40) + 20
+      const y = Math.random() * (canvasHeight - 100) + 20
+      const size = Math.floor(Math.random() * 20) + 10 // 10-30 arası boyut
+      const colorIndex = Math.floor(Math.random() * cakeColors.length)
+      
+      newDecorations.push({
+        type,
+        x,
+        y,
+        size,
+        color: cakeColors[colorIndex],
+      })
+    }
+    
+    setCakeState({
+      ...cakeState,
+      decorations: newDecorations,
+    })
+  }
+  
   // Pastayı sıfırla
   const resetCake = () => {
     setCakeState({
@@ -215,7 +338,12 @@ export default function CakeGame() {
       layers: 3,
       decorations: [],
       text: "Doğum Günün Kutlu Olsun Defne!",
+      textColor: "#FF66B2",
+      textSize: 16,
+      cakeShape: "round",
+      backgroundColor: "#FFFFFF"
     })
+    setSelectedDecorationIndex(null)
   }
 
   // Canvas'ı güncelle
@@ -238,7 +366,7 @@ export default function CakeGame() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="base" className="flex items-center gap-2">
                 <Cake size={16} />
                 <span>Pasta</span>
@@ -251,9 +379,36 @@ export default function CakeGame() {
                 <Type size={16} />
                 <span>Yazı</span>
               </TabsTrigger>
+              <TabsTrigger value="background" className="flex items-center gap-2">
+                <span>Arka Plan</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="base" className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Pasta Şekli</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant={cakeState.cakeShape === "round" ? "default" : "outline"}
+                    onClick={() => setCakeState({ ...cakeState, cakeShape: "round" })}
+                  >
+                    Yuvarlak
+                  </Button>
+                  <Button
+                    variant={cakeState.cakeShape === "square" ? "default" : "outline"}
+                    onClick={() => setCakeState({ ...cakeState, cakeShape: "square" })}
+                  >
+                    Kare
+                  </Button>
+                  <Button
+                    variant={cakeState.cakeShape === "heart" ? "default" : "outline"}
+                    onClick={() => setCakeState({ ...cakeState, cakeShape: "heart" })}
+                  >
+                    Kalp
+                  </Button>
+                </div>
+              </div>
+              
               <div>
                 <h3 className="text-sm font-medium mb-2">Pasta Rengi</h3>
                 <div className="grid grid-cols-5 gap-2">
@@ -345,8 +500,30 @@ export default function CakeGame() {
                   </Button>
                 </div>
               </div>
+              
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1" 
+                  onClick={deleteSelectedDecoration}
+                  disabled={selectedDecorationIndex === null}
+                >
+                  Süslemeyi Sil
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1" 
+                  onClick={addRandomDecorations}
+                >
+                  Rastgele Süsle
+                </Button>
+              </div>
 
-              <p className="text-sm text-gray-500 italic">Süslemeleri eklemek için pastaya tıklayın</p>
+              <p className="text-sm text-gray-500 italic">
+                {selectedDecorationIndex === null 
+                  ? "Süslemeleri eklemek için pastaya tıklayın" 
+                  : "Süslemeyi taşımak için pastada başka bir yere tıklayın"}
+              </p>
             </TabsContent>
 
             <TabsContent value="text" className="space-y-4">
@@ -359,6 +536,59 @@ export default function CakeGame() {
                   rows={2}
                   maxLength={50}
                 />
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-2">Yazı Rengi</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {cakeColors.map((color, index) => (
+                    <div
+                      key={index}
+                      className={`cake-tool ${cakeState.textColor === color ? "active" : ""}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setCakeState({ ...cakeState, textColor: color })}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-2">Yazı Boyutu</h3>
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCakeState({ ...cakeState, textSize: Math.max(12, cakeState.textSize - 2) })}
+                    disabled={cakeState.textSize <= 12}
+                  >
+                    -
+                  </Button>
+                  <span>{cakeState.textSize}px</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCakeState({ ...cakeState, textSize: Math.min(24, cakeState.textSize + 2) })}
+                    disabled={cakeState.textSize >= 24}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="background" className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Arka Plan Rengi</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[...cakeColors, "#FFFFFF", "#F5F5F5", "#FFF0F5", "#F0F8FF"].map((color, index) => (
+                    <div
+                      key={index}
+                      className={`cake-tool ${cakeState.backgroundColor === color ? "active" : ""}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setCakeState({ ...cakeState, backgroundColor: color })}
+                    />
+                  ))}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
