@@ -367,6 +367,22 @@ export default function CakeGame() {
             <Button variant="outline" className="flex-1" onClick={resetCake}>
               Sıfırla
             </Button>
+            <Button variant="outline" className="flex-1" onClick={() => {
+              const canvas = canvasRef.current;
+              if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'pasta-tasarımı.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                confetti({
+                  particleCount: 100,
+                  spread: 70,
+                  origin: { y: 0.6 },
+                });
+              }
+            }}>
+              İndir
+            </Button>
             <Button className="flex-1" onClick={completeCake}>
               Tamamla
             </Button>

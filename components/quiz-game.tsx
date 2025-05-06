@@ -32,7 +32,7 @@ const quizQuestions = [
   {
     question: "Defne'nin en sevdiği yemek hangisidir?",
     options: ["Pizza", "Makarna", "Hamburger", "Mantı"],
-    correctAnswer: 0, // Mantı (index 3)
+    correctAnswer: 3, // Mantı (index 3)
   },
 ]
 
@@ -42,6 +42,7 @@ export default function QuizGame() {
   const [score, setScore] = useState(0)
   const [showResult, setShowResult] = useState(false)
   const [answers, setAnswers] = useState<number[]>([])
+  const [feedback, setFeedback] = useState<{correct: boolean, message: string} | null>(null)
 
   const handleOptionSelect = (index: number) => {
     setSelectedOption(index)
@@ -52,28 +53,61 @@ export default function QuizGame() {
     const newAnswers = [...answers]
     newAnswers[currentQuestion] = selectedOption!
     setAnswers(newAnswers)
-
-    // Doğru cevap kontrolü
+  
+    // Doğru cevap kontrolü ve konfeti efekti
     if (selectedOption === quizQuestions[currentQuestion].correctAnswer) {
       setScore(score + 1)
-    }
-
-    // Sonraki soruya geç veya sonuçları göster
-    if (currentQuestion < quizQuestions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-      setSelectedOption(null)
+      setFeedback({correct: true, message: "Doğru cevap!" })
+      // Her doğru cevapta küçük bir konfeti
+      confetti({
+        particleCount: 30,
+        spread: 50,
+        origin: { y: 0.7 },
+        colors: ['#FF69B4', '#FFB6C1', '#FF1493']
+      })
     } else {
-      setShowResult(true)
-
-      // Yüksek skor için konfeti
-      if (score >= 3) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        })
-      }
+      setFeedback({correct: false, message: `Yanlış cevap! Doğru cevap: ${quizQuestions[currentQuestion].options[quizQuestions[currentQuestion].correctAnswer]}` })
     }
+    
+    // Kısa bir süre sonra geri bildirimi temizle ve sonraki soruya geç
+    setTimeout(() => {
+      setFeedback(null)
+      
+      // Sonraki soruya geç veya sonuçları göster
+      if (currentQuestion < quizQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1)
+        setSelectedOption(null)
+      } else {
+        setShowResult(true)
+    
+        // Quiz bitiminde büyük konfeti gösterisi
+        const duration = 2000
+        const end = Date.now() + duration
+    
+        const frame = () => {
+          confetti({
+            particleCount: 7,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.7 },
+            colors: ['#FF69B4', '#FFB6C1', '#FF1493', '#FFC0CB', '#DB7093']
+          })
+          
+          confetti({
+            particleCount: 7,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.7 },
+            colors: ['#FF69B4', '#FFB6C1', '#FF1493', '#FFC0CB', '#DB7093']
+          })
+    
+          if (Date.now() < end) {
+            requestAnimationFrame(frame)
+          }
+        }
+        frame()
+      }
+    }, 1500) // 1.5 saniye sonra geri bildirimi temizle ve sonraki soruya geç
   }
 
   const resetQuiz = () => {
@@ -82,6 +116,7 @@ export default function QuizGame() {
     setScore(0)
     setShowResult(false)
     setAnswers([])
+    setFeedback(null)
   }
 
   return (
@@ -97,14 +132,27 @@ export default function QuizGame() {
             <div className="space-y-4 mb-6">
               <h3 className="text-lg font-semibold text-pink-600">Cevapların:</h3>
               {quizQuestions.map((q, index) => (
-                <div key={index} className="text-left border-b pb-2">
-                  <p className="font-medium">{q.question}</p>
-                  <p className={answers[index] === q.correctAnswer ? "text-green-600" : "text-red-600"}>
-                    Senin cevabın: {q.options[answers[index]]}
-                    {answers[index] !== q.correctAnswer && (
-                      <span className="block text-green-600">Doğru cevap: {q.options[q.correctAnswer]}</span>
-                    )}
-                  </p>
+                <div key={index} className="text-left border border-pink-100 rounded-lg p-4 transition-all hover:shadow-md">
+                  <p className="font-medium text-gray-800 mb-2">{q.question}</p>
+                  <div className={`p-3 rounded-lg ${answers[index] === q.correctAnswer ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <p className={`flex items-center gap-2 ${answers[index] === q.correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
+                      {answers[index] === q.correctAnswer ? (
+                        <>
+                          <span className="text-lg">✨</span>
+                          <span>Doğru cevap! {q.options[answers[index]]}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">❌</span>
+                          <span>Senin cevabın: {q.options[answers[index]]}</span>
+                          <span className="block mt-2 text-green-600 font-medium">
+                            <span className="text-lg">✅</span>
+                            Doğru cevap: {q.options[q.correctAnswer]}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -122,23 +170,36 @@ export default function QuizGame() {
 
             <h2 className="text-xl font-semibold text-pink-600 mb-4">{quizQuestions[currentQuestion].question}</h2>
 
-            <RadioGroup value={selectedOption?.toString()} className="space-y-3 mb-6">
+            {feedback && (
+              <div className={`p-3 mb-4 rounded-lg ${feedback.correct ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                <p className="flex items-center gap-2">
+                  <span className="text-lg">{feedback.correct ? '✨' : '❌'}</span>
+                  <span>{feedback.message}</span>
+                </p>
+              </div>
+            )}
+
+            <RadioGroup key={currentQuestion} value={selectedOption?.toString()} className="space-y-3 mb-6">
               {quizQuestions[currentQuestion].options.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
+                <div
+                  key={index}
+                  className={`flex items-center space-x-2 p-3 rounded-lg transition-all ${selectedOption === index ? 'bg-pink-100 shadow-sm' : 'hover:bg-pink-50'}`}
+                >
                   <RadioGroupItem
                     value={index.toString()}
-                    id={`option-${index}`}
+                    id={`option-${currentQuestion}-${index}`}
                     onClick={() => handleOptionSelect(index)}
+                    className="border-pink-400 text-pink-600"
                   />
-                  <Label htmlFor={`option-${index}`} className="cursor-pointer">
+                  <Label htmlFor={`option-${currentQuestion}-${index}`} className="cursor-pointer w-full">
                     {option}
                   </Label>
                 </div>
               ))}
             </RadioGroup>
 
-            <Button onClick={handleNextQuestion} disabled={selectedOption === null} className="w-full">
-              {currentQuestion < quizQuestions.length - 1 ? "Sonraki Soru" : "Sonuçları Göster"}
+            <Button onClick={handleNextQuestion} disabled={selectedOption === null || feedback !== null} className="w-full">
+              {feedback ? "Lütfen bekleyin..." : currentQuestion < quizQuestions.length - 1 ? "Sonraki Soru" : "Sonuçları Göster"}
             </Button>
           </>
         )}
